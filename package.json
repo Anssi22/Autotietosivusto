@@ -1,0 +1,23 @@
+{
+  "name": "autotietosivusto",
+  "version": "1.0.0",
+  "main": "index.js",
+"scripts": {
+    "dev": "concurrently -n backend,frontend -c blue,green \"cd backend && npm run dev\" \"cd frontend && npm run dev\""
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Anssi22/Autotietosivusto.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Anssi22/Autotietosivusto/issues"
+  },
+  "homepage": "https://github.com/Anssi22/Autotietosivusto#readme",
+  "description": "",
+  "devDependencies": {
+    "concurrently": "^9.2.1"
+  }
+}
