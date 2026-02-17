@@ -126,7 +126,3 @@ app.post('/cars/:id/comments', async (req, res) => {
     res.status(400).json({ error: 'Bad data', details: err.message });
   }
 });
-
-app.listen(PORT, () => {
-  console.log(`Server running on http://localhost:${PORT}`);
-});
