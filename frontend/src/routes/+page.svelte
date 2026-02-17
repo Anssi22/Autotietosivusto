@@ -16,59 +16,89 @@
   // Suodattimet, jotka lähetetään backendille query-parametreina
   let filters = { manufacturer: '', year: '', fuelType: '', search: '' };
 
+  
   // Vite-proxy: selain kutsuu samaa originia (5173) -> /api/...,
   // ja Vite välittää pyynnön backendille (3000) konfigun mukaan.
   const API_URL = "/api";
-
-   // Viite dialog-elementtiin, Tällä saadaan kutsuttua detailDialog.showModal() ja detailDialog.close().
-  let detailDialog;
+  
+  // Viite dialog-elementteihin, Tällä saadaan kutsuttua detailDialog.showModal() ja detailDialog.close().
+  let autoLisatietoDialog;
+  let lisaaTaiMuokkaaAutoDialog;
 
   async function loadCars() {
     // URLSearchParams rakentaa query stringin oikein (enkoodaa välilyönnit ym.).
     // Lopputulos on tyyliin: manufacturer=Toyota&fuelType=hybrid&search=corolla
     const params = new URLSearchParams();
-
+    
     // Lisätään vain ne filtterit, joilla on arvo
     // (ettei URL:iin tule turhia manufacturer= jne).
     if (filters.manufacturer) params.append('manufacturer', filters.manufacturer);
     if (filters.year) params.append('year', filters.year);
     if (filters.fuelType) params.append('fuelType', filters.fuelType);
     if (filters.search) params.append('search', filters.search);
-
+    
     // params.toString() palauttaa query string -osion ILMAN '?' merkkiä.
     // Siksi URL rakennetaan näin: /cars? + querystring
     const res = await fetch(`${API_URL}/cars?${params.toString()}`);
-
+    
     // Parsitaan JSON ja tallennetaan lista tilaan
     cars = await res.json();
-
+    
     // Jos joku auto oli valittuna, “synkataan” selectedCar uuteen listaan.
     // Tämä on hyödyllinen esim. poiston tai päivityksen jälkeen.
     if (selectedCar) {
       selectedCar = cars.find(c => c._id === selectedCar._id) || null;
     }
   }
-
-  function openCarDetail(car) {
+  
+  let editingCar = null;
+  
+  function avaaAutoLisatietoDialog(car) {
     selectedCar = car;
-    // Avaa modal popup
-    detailDialog?.showModal();
+    autoLisatietoDialog?.showModal();
   }
-
-  function closeCarDetail() {
-    detailDialog?.close();
+  
+  function suljeAutoLisatietoDialog() {
+    autoLisatietoDialog?.close();
     selectedCar = null;
   }
   
-  async function handleAddCar(carData) {
-    // Lähetä uusi auto backendille JSONina
+  function openCreateForm() {
+    editingCar = null;
+    lisaaTaiMuokkaaAutoDialog?.showModal();
+  }
+
+  function startEdit(car) {
+    editingCar = car; // tämä saa muokkauslomakkeen esitäytettyä
+    lisaaTaiMuokkaaAutoDialog?.showModal();
+  }
+
+  function suljeLisaaTaiMuokkaaAutoPopup() {
+    lisaaTaiMuokkaaAutoDialog?.close()
+    editingCar = null;
+  }
+
+  function onAddEditDialogClosed() {
+    editingCar = null;
+  }
+
+  async function handleAddCar(payload) {
     await fetch(`${API_URL}/cars`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(carData)
+      body: JSON.stringify(payload)
     });
+    editingCar = null;
+    await loadCars();
+  }
 
-    // Hae lista uusiksi, jotta lisätty auto näkyy
+  async function handleUpdateCar(payload) {
+    await fetch(`${API_URL}/cars/${payload.id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    editingCar = null;
     await loadCars();
   }
 
@@ -77,7 +107,7 @@
     await fetch(`${API_URL}/cars/${id}`, { method: 'DELETE' });
 
     // Jos poistettiin juuri valittuna ollut auto, sulje detail
-   if (selectedCar && selectedCar._id === id) closeCarDetail();
+    if (selectedCar && selectedCar._id === id) suljeAutoLisatietoDialog();
 
     // Päivitä lista
     await loadCars();
@@ -113,49 +143,54 @@
 
   <!-- Suodatinpalkki: lähettää changeFilters-eventin, jossa uudet filtterit e.detailissä -->
   <FilterBar {filters} on:changeFilters={(e) => handleFilterChange(e.detail)} />
-    
-<!--   {#if selectedCar}
-    <section aria-labelledby="selected-car-title">
-      <h2 id="selected-car-title">Valittu auto</h2>
-      <CarDetail
-        {selectedCar}
-        on:addComment={(e) => handleAddComment(selectedCar._id, e.detail)}
-      />
-    </section>
-  {/if} -->
 
-    <div class="layout">
+  <button type="button" class="btn-add-car" on:click={openCreateForm}>Lisää auto</button>
+    <div class="main-layout">
       <section>
         <h2>Autot</h2>
 
-      <!-- CarList:
+        <!-- Vanhempi kuuntelee eventin ja saa datan e.detailistä
+        +page.svelte kuuntelee CarListin eventtejä:
            - saa propsina cars
            - lähettää select-eventin kun auto valitaan
-           - lähettää delete-eventin kun poisto painetaan -->
+           - lähettää edit-eventin kun muokataan
+           - lähettää delete-eventin kun poisto painetaan 
+           Svelte tekee tässä automaattisesti niin, että se payload jonka dispatchasit (car) löytyy parentissa e.detail-kentästä.-->
       <CarList
         {cars}
-        on:select={(e) => openCarDetail(e.detail)}
+        on:select={(e) => avaaAutoLisatietoDialog(e.detail)}
+        on:edit={(e) => startEdit(e.detail)}
         on:delete={(e) => handleDeleteCar(e.detail)}
       />
     </section>
 
-    <section>
-      <h2>Lisää auto</h2>
+    <!-- Popup -->
+    <dialog bind:this={lisaaTaiMuokkaaAutoDialog} on:close={onAddEditDialogClosed}>
+      <header class="dialog-header">
+        <h2>{editingCar ? 'Muokkaa autoa' : 'Lisää auto'}</h2>
+        <button type="button" on:click={suljeLisaaTaiMuokkaaAutoPopup}>Sulje</button>
+      </header>
 
-      <!-- CarForm lähettää addCar-eventin ja e.detail sisältää formidatan -->
-      <CarForm on:addCar={(e) => handleAddCar(e.detail)} />
-    </section>
+      <CarForm
+        mode={editingCar ? 'edit' : 'create'}
+        initialData={editingCar}
+        on:addCar={(e) => { handleAddCar(e.detail); suljeLisaaTaiMuokkaaAutoPopup(); }}
+        on:updateCar={(e) => { handleUpdateCar(e.detail); suljeLisaaTaiMuokkaaAutoPopup(); }}
+        on:cancelEdit={suljeLisaaTaiMuokkaaAutoPopup}
+      />
+    </dialog>
+
   </div>
 
   <!-- Popup -->
   <dialog
-    bind:this={detailDialog}
+    bind:this={autoLisatietoDialog}
     aria-labelledby="car-dialog-title"
-    on:close={closeCarDetail}
+    on:close={suljeAutoLisatietoDialog}
   >
     <header class="dialog-header">
       <h2 id="car-dialog-title">Auton tiedot</h2>
-      <button type="button" on:click={closeCarDetail}>Sulje</button>
+      <button type="button" on:click={suljeAutoLisatietoDialog}>Sulje</button>
     </header>
 
     {#if selectedCar}
@@ -170,22 +205,3 @@
 
 </main>
 
-<style>
-  main {
-    max-width: 1100px;
-    margin: 0 auto;
-    padding: 1.5rem;
-    font-family: system-ui, sans-serif;
-  }
-
-  /* Kaksipalstainen layout: vasen lista, oikea lomake */
-  .layout {
-    display: grid;
-    grid-template-columns: 2fr 1fr;
-    gap: 1.5rem;
-  }
-
-  h1 {
-    margin-bottom: 1rem;
-  }
-</style>

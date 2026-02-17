@@ -1,65 +1,50 @@
 <script>
   import { createEventDispatcher } from 'svelte';
+  import CommentList from './CommentList.svelte';
+  import CommentForm from './CommentForm.svelte';
+
   export let selectedCar;
+
+  // Koska createEventDispatcher() palauttaa funktion, jolla tämä komponentti voi lähettää “component eventtejä” 
+  // ylöspäin vanhemmalle komponentille. Kun teet const dispatch = createEventDispatcher();, 
+  // talletat sen palauttaman funktion muuttujaan dispatch, jotta voit myöhemmin kutsua sitä näin: 
+  // dispatch('addComment', payload).
   const dispatch = createEventDispatcher();
 
-  let user = '';
-  let text = '';
-  let rating = 5;
-
-  function submitComment() {
-    dispatch('addComment', { user, text, rating: Number(rating) });
-    user = '';
-    text = '';
-    rating = 5;
+  function forwardAddComment(e) {
+    // Välitetään sama eventti vanhemmalle komponentille
+    dispatch('addComment', e.detail);
   }
-
-  $: avgRating = selectedCar?.comments?.length
-    ? (selectedCar.comments.reduce((sum, c) => sum + (c.rating || 0), 0) /
-       selectedCar.comments.length).toFixed(1)
-    : null;
 </script>
 
-<aside class="detail">
-  <h2>{selectedCar.name}</h2>
-  <p><strong>{selectedCar.manufacturer}</strong> · {selectedCar.year}</p>
-  {#if selectedCar.fuelType}<p>Polttoainetyyppi: {selectedCar.fuelType}</p>{/if}
-  {#if selectedCar.horsepower}<p>Teho: {selectedCar.horsepower} hv</p>{/if}
-  <p>{selectedCar.description}</p>
+{#if selectedCar}
+  <aside class="detail">
+    {#if selectedCar.imageUrl}
+    <img
+      src={selectedCar.imageUrl}
+      alt={`${selectedCar.manufacturer} ${selectedCar.name}`}
+      class="car-image"
+      />
+    {/if}
+    <h2>{selectedCar.name}</h2>
+    <p><strong>{selectedCar.manufacturer}</strong> · {selectedCar.year}</p>
 
-  {#if avgRating}
-    <p>Keskiarvoarvosana: {avgRating} / 5</p>
-  {/if}
+    {#if selectedCar.fuelType}
+      <p>Polttoainetyyppi: {selectedCar.fuelType}</p>
+    {/if}
 
-  <h3>Kommentit</h3>
-  {#if !selectedCar.comments || selectedCar.comments.length === 0}
-    <p>Ei kommentteja vielä.</p>
-  {:else}
-    <ul>
-      {#each selectedCar.comments as c}
-        <li>
-          <strong>{c.user}</strong> ({c.rating}/5): {c.text}
-        </li>
-      {/each}
-    </ul>
-  {/if}
+    {#if selectedCar.horsepower}
+      <p>Teho: {selectedCar.horsepower} hv</p>
+    {/if}
 
-  <form on:submit|preventDefault={submitComment} class="comment-form">
-    <input placeholder="Nimi" bind:value={user} required />
-    <textarea placeholder="Kommentti" bind:value={text} required rows="3" />
-    <label>
-      Arvosana:
-      <select bind:value={rating}>
-        <option value="1">1</option>
-        <option value="2">2</option>
-        <option value="3">3</option>
-        <option value="4">4</option>
-        <option value="5">5</option>
-      </select>
-    </label>
-    <button type="submit">Lähetä kommentti</button>
-  </form>
-</aside>
+    <p>{selectedCar.description}</p>
+
+    <CommentList comments={selectedCar.comments} />
+    <CommentForm on:addComment={forwardAddComment} />
+  </aside>
+{:else}
+  <p>Ei valittua autoa.</p>
+{/if}
 
 <style>
   .detail {
@@ -67,10 +52,13 @@
     padding-top: 1rem;
     border-top: 1px solid #ddd;
   }
-  .comment-form {
-    display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
-    margin-top: 0.75rem;
+
+  .car-image {
+    width: 100%;
+    max-width: 500px;
+    height: auto;
+    border-radius: 8px;
+    display: block;
+    margin: 0.75rem 0;
   }
 </style>

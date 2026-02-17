@@ -105,18 +105,9 @@ body {
 /* Layout (lista + lomake) */
 
 .main-layout {
-  display: grid;
-  grid-template-columns: minmax(0, 1.8fr) minmax(0, 1.2fr);
-  gap: 1.4rem;
-  align-items: flex-start;
+  display: block;
   position: relative;
   z-index: 1;
-}
-
-@media (max-width: 900px) {
-  .main-layout {
-    grid-template-columns: minmax(0, 1fr);
-  }
 }
 
 /* Kortit & pinnat */
@@ -198,6 +189,31 @@ button.danger {
   box-shadow: 0 10px 25px rgba(239, 68, 68, 0.45);
 }
 
+button.edit {
+  background: linear-gradient(135deg, #2e7d32 0, #1b5e20 100%);
+  box-shadow: 0 10px 25px rgba(46, 125, 50, 0.4);
+}
+
+button.edit:hover {
+  background: linear-gradient(135deg, #388e3c 0, #2e7d32 100%);
+  box-shadow: 0 14px 35px rgba(46, 125, 50, 0.5);
+}
+
+/* "Lisää auto" -nappi erottuu */
+.btn-add-car {
+  padding: 0.65rem 1.4rem;
+  font-size: 1.05rem;
+  font-weight: 600;
+  background: linear-gradient(135deg, #3b82f6 0, #1d4ed8 100%);
+  box-shadow: 0 12px 30px rgba(59, 130, 246, 0.5);
+  margin-bottom: 1.2rem;
+}
+
+.btn-add-car:hover {
+  background: linear-gradient(135deg, #60a5fa 0, #3b82f6 100%);
+  box-shadow: 0 16px 40px rgba(59, 130, 246, 0.6);
+}
+
 /* Lomakkeet */
 
 input,
@@ -226,6 +242,11 @@ textarea::placeholder {
   color: rgba(148, 163, 184, 0.7);
 }
 
+/* Select-elementin placeholder-tyyli kun valinta on tyhjä */
+select.placeholder {
+  color: rgba(148, 163, 184, 0.7);
+}
+
 input:focus,
 select:focus,
 textarea:focus {
@@ -250,13 +271,15 @@ textarea:focus {
 
 /* CarList */
 
-.car-grid {
+.car-grid,
+.car-list {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
   gap: 0.9rem;
 }
 
-.car-card {
+.car-card,
+.card {
   background: radial-gradient(circle at top left, #020617 0, #020617 55%);
   border-radius: var(--radius-md);
   border: 1px solid rgba(148, 163, 184, 0.18);
@@ -268,9 +291,11 @@ textarea:focus {
     border-color 0.12s ease, background 0.18s ease;
   position: relative;
   overflow: hidden;
+  min-height: 200px;
 }
 
-.car-card::before {
+.car-card::before,
+.card::before {
   content: "";
   position: absolute;
   inset: 0;
@@ -280,14 +305,41 @@ textarea:focus {
   pointer-events: none;
 }
 
-.car-card:hover {
+.car-card:hover,
+.card:hover {
   transform: translateY(-3px);
   box-shadow: 0 16px 36px rgba(15, 23, 42, 0.85);
   border-color: rgba(129, 140, 248, 0.8);
 }
 
-.car-card:hover::before {
+.car-card:hover::before,
+.card:hover::before {
   opacity: 1;
+}
+
+/* Card body ja actions -layout */
+.card-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.card-body img {
+  max-width: 100%;
+  border-radius: 4px;
+}
+
+.card-actions {
+  margin-top: auto;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.card-actions button {
+  flex: 1;
+  min-width: 0;
 }
 
 .car-card-header {
@@ -326,14 +378,17 @@ textarea:focus {
 /* Detail-dialogi */
 
 dialog {
-  border: none;
+  border: 2px solid rgba(148, 163, 184, 0.3);
   border-radius: 20px;
   padding: 0;
   max-width: 520px;
   width: 100%;
   background: radial-gradient(circle at top, #020617 0, #020617 55%, #020617 100%);
   color: var(--text-main);
-  box-shadow: 0 20px 50px rgba(15, 23, 42, 0.95);
+  box-shadow: 0 20px 50px rgba(15, 23, 42, 0.95), 
+              0 0 0 1px rgba(59, 130, 246, 0.2),
+              inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  overflow: hidden;
 }
 
 dialog::backdrop {
@@ -345,13 +400,25 @@ dialog::backdrop {
   padding: 1.3rem 1.4rem 1.2rem;
 }
 
+/* Dialogin sisältöalue - padding kaikille lapsille paitsi headerille */
+dialog > :not(header) {
+  padding: 1.3rem 1.4rem 1.4rem;
+}
+
+/* Varmistetaan että header ei saa ylimääräistä paddingia */
+dialog > header.dialog-header {
+  padding: 1.1rem 1.4rem;
+  margin: 0;
+}
+
 .dialog-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
   gap: 0.75rem;
-  padding: 0.9rem 1.2rem 0.3rem;
-  border-bottom: 1px solid rgba(55, 65, 81, 0.9);
+  padding: 1.1rem 1.4rem;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.2);
+  background: rgba(15, 23, 42, 0.5);
 }
 
 .dialog-header h2 {
