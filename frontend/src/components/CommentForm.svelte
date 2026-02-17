@@ -56,7 +56,7 @@
   {/if}
 
   <input placeholder="Nimi" bind:value={user} required />
-  <textarea placeholder="Kommentti" bind:value={text} required rows="3" />
+  <textarea placeholder="Kommentti" bind:value={text} required rows="3" ></textarea>
 
   <label>
     Arvosana:
